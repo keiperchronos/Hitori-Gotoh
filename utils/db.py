@@ -102,7 +102,7 @@ async def get_prefix(bot: BotCore, message: disnake.Message):
         guild_prefix = data.get("prefix")
 
     if not guild_prefix:
-        guild_prefix = bot.config.get("DEFAULT_PREFIX") or "."
+        guild_prefix = bot.config.get("DEFAULT_PREFIX") or "!!"
 
     return guild_prefix
 

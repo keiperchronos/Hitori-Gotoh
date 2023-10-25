@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import asyncio
 import gc
 import os
@@ -585,7 +586,7 @@ class Owner(commands.Cog):
             guild_data = await self.bot.get_global_data(ctx.guild.id, db_name=DBModel.guilds)
             ctx.global_guild_data = guild_data
 
-        self.bot.pool.guild_prefix_cache[ctx.guild_id] = prefix
+        self.bot.pool.guild_prefix_cache[ctx.guild.id] = prefix
         guild_data["prefix"] = prefix
         await self.bot.update_global_data(ctx.guild.id, guild_data, db_name=DBModel.guilds)
 
@@ -614,7 +615,7 @@ class Owner(commands.Cog):
 
         if not guild_data["prefix"]:
             raise GenericError("**Nao há prefixo configurado no servidor.**")
-        
+
         guild_data["prefix"] = ""
         self.bot.pool.guild_prefix_cache[ctx.guild.id] = ""
 

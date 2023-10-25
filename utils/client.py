@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 
 import asyncio
@@ -33,6 +34,7 @@ from web_app import WSClient, start
 
 
 class BotPool:
+
     bots: List[BotCore] = []
     killing_state = False
 
@@ -62,12 +64,14 @@ class BotPool:
 
     @property
     def database(self) -> Union[LocalDatabase, MongoDatabase]:
+
         if self.config["MONGO"]:
             return self.mongo_database
 
         return self.local_database
 
     def start_lavalink(self):
+
         if self.lavalink_instance:
             try:
                 self.lavalink_instance.kill()
@@ -75,21 +79,25 @@ class BotPool:
                 traceback.print_exc()
 
         self.lavalink_instance = run_lavalink(
-            lavalink_file_url=self.config["LAVALINK_FILE_URL"],
-            lavalink_initial_ram=self.config["LAVALINK_INITIAL_RAM"],
-            lavalink_ram_limit=self.config["LAVALINK_RAM_LIMIT"],
-            lavalink_additional_sleep=int(self.config["LAVALINK_ADDITIONAL_SLEEP"]),
-            use_jabba=self.config["USE_JABBA"],
+            lavalink_file_url=self.config['LAVALINK_FILE_URL'],
+            lavalink_initial_ram=self.config['LAVALINK_INITIAL_RAM'],
+            lavalink_ram_limit=self.config['LAVALINK_RAM_LIMIT'],
+            lavalink_additional_sleep=int(self.config['LAVALINK_ADDITIONAL_SLEEP']),
+            use_jabba=self.config["USE_JABBA"]
         )
 
     async def start_bot(self, bot: BotCore):
+
         e = None
 
         try:
             await bot.start(bot.http.token)
         except disnake.HTTPException as error:
+
             if error.status == 429 or "429 Too Many Requests" in str(e):
+
                 if not self.config["KILL_ON_429"]:
+
                     if self.killing_state == "ratelimit":
                         return
 
@@ -119,41 +127,26 @@ class BotPool:
             e = error
 
         if e:
-            if isinstance(e, disnake.PrivilegedIntentsRequired):
-                e = (
-                    "Você não ativou as Privileged Intents na sua aplicação<br>"
-                    "Acesse o discord developer portal:<br>"
-                    "https://discord.com/developers/applications/<br>"
-                    'e clique na sua aplicação e depois clique no menu "bot"<br>'
-                    "e em seguida ative todas as intents.<br>"
-                    "Print de exemplo: https://imgur.com/gallery/JCoxoOU<br>"
-                    "Após corrigir, reinicie a aplicação."
-                )
 
-                print(
-                    ("=" * 30)
-                    + f"\nFalha ao iniciar o bot configurado no: {bot.identifier}\n"
-                    + e.replace("<br>", "\n")
-                    + "\n"
-                    + ("=" * 30)
-                )
+            if isinstance(e, disnake.PrivilegedIntentsRequired):
+                e = "Você não ativou as Privileged Intents na sua aplicação<br>" \
+                    "Acesse o discord developer portal:<br>" \
+                    "https://discord.com/developers/applications/<br>" \
+                    "e clique na sua aplicação e depois clique no menu \"bot\"<br>" \
+                    "e em seguida ative todas as intents.<br>" \
+                    "Print de exemplo: https://imgur.com/gallery/OrVY3KY<br>" \
+                    "Após corrigir, reinicie a aplicação."
+
+                print(("=" * 30) + f"\nFalha ao iniciar o bot configurado no: {bot.identifier}\n" + e.replace('<br>', '\n') + "\n" + ("=" * 30))
 
             elif isinstance(e, disnake.LoginFailure) and "Improper token" in str(e):
-                e = (
-                    "Foi utilizado um token inválido.<br>"
-                    "Revise se o token informado está correto<br>"
-                    "ou se o token foi resetado<br>"
-                    "ou copiado do local correto ( ex: https://i.imgur.com/k894c1q.png )<br>"
+                e = "Foi utilizado um token inválido.<br>" \
+                    "Revise se o token informado está correto<br>" \
+                    "ou se o token foi resetado<br>" \
+                    "ou copiado do local correto ( ex: https://imgur.com/gallery/JCoxoOU )<br>" \
                     "Após corrigir, reinicie a aplicação."
-                )
 
-                print(
-                    ("=" * 30)
-                    + f"\nFalha ao iniciar o bot configurado no: {bot.identifier}\n"
-                    + e.replace("<br>", "\n")
-                    + "\n"
-                    + ("=" * 30)
-                )
+                print(("=" * 30) + f"\nFalha ao iniciar o bot configurado no: {bot.identifier}\n" + e.replace('<br>', '\n') + "\n" + ( "=" * 30))
 
             else:
                 traceback.print_tb(e.__traceback__)
@@ -162,9 +155,12 @@ class BotPool:
             self.bots.remove(bot)
 
     async def run_bots(self, bots: List[BotCore]):
-        await asyncio.wait([asyncio.create_task(self.start_bot(bot)) for bot in bots])
+        await asyncio.wait(
+            [asyncio.create_task(self.start_bot(bot)) for bot in bots]
+        )
 
     def load_playlist_cache(self):
+
         try:
             with open(f"./playlist_cache.json") as file:
                 self.playlist_cache = json.load(file)
@@ -172,41 +168,40 @@ class BotPool:
             return
 
     async def connect_spotify(self):
+
         if not self.spotify:
             return
 
         await self.spotify.authorize()
 
     async def connect_rpc_ws(self):
+
         if not self.config["RUN_RPC_SERVER"] and (
-            not self.config["RPC_SERVER"]
-            or self.config["RPC_SERVER"] == "ws://localhost:80/ws"
-        ):
+                not self.config["RPC_SERVER"] or self.config["RPC_SERVER"] == "ws://localhost:80/ws"):
             pass
         else:
             await self.ws_client.ws_loop()
 
     def load_cfg(self):
+
         self.config = load_config()
 
         if not self.config["DEFAULT_PREFIX"]:
             self.config["DEFAULT_PREFIX"] = "!!"
 
     def setup(self):
+
         self.load_cfg()
 
-        if self.config["ENABLE_LOGGER"]:
+        if self.config['ENABLE_LOGGER']:
+
             if not os.path.isdir("./.logs"):
                 os.makedirs("./.logs")
 
             logger = logging.getLogger()
             logger.setLevel(logging.DEBUG)
-            handler = logging.FileHandler(
-                filename="./.logs/disnake.log", encoding="utf-8", mode="w"
-            )
-            handler.setFormatter(
-                logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s")
-            )
+            handler = logging.FileHandler(filename='./.logs/disnake.log', encoding='utf-8', mode='w')
+            handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(name)s %(message)s'))
             logger.addHandler(handler)
 
         LAVALINK_SERVERS = {}
@@ -215,13 +210,14 @@ class BotPool:
             ini_file = "auto_lavalink.ini"
             print(f"Baixando lista de servidores lavalink (arquivo: {ini_file})")
             r = requests.get(self.config["LAVALINK_SERVER_LIST"], allow_redirects=True)
-            with open("auto_lavalink.ini", "wb") as f:
+            with open("auto_lavalink.ini", 'wb') as f:
                 f.write(r.content)
             r.close()
         else:
             ini_file = "lavalink.ini"
 
         for key, value in self.config.items():
+
             if key.lower().startswith("lavalink_node_"):
                 try:
                     LAVALINK_SERVERS[key] = json.loads(value)
@@ -236,9 +232,7 @@ class BotPool:
         except Exception:
             traceback.print_exc()
         else:
-            for key, value in {
-                section: dict(config.items(section)) for section in config.sections()
-            }.items():
+            for key, value in {section: dict(config.items(section)) for section in config.sections()}.items():
                 value["identifier"] = key.replace(" ", "_")
                 value["secure"] = value.get("secure") == "true"
                 value["search"] = value.get("search") != "false"
@@ -263,20 +257,13 @@ class BotPool:
                     break
 
         if start_local is None:
-            if start_local := (
-                self.config["RUN_LOCAL_LAVALINK"] is True or not LAVALINK_SERVERS
-            ):
+
+            if start_local := (self.config['RUN_LOCAL_LAVALINK'] is True or not LAVALINK_SERVERS):
                 pass
             else:
                 start_local = False
 
-        intents = disnake.Intents(
-            **{
-                i[:-7].lower(): v
-                for i, v in self.config.items()
-                if i.lower().endswith("_intent")
-            }
-        )
+        intents = disnake.Intents(**{i[:-7].lower(): v for i, v in self.config.items() if i.lower().endswith("_intent")})
         intents.members = True
         intents.guilds = True
 
@@ -286,29 +273,19 @@ class BotPool:
             self.mongo_database = MongoDatabase(mongo_key)
             print("Database em uso: MongoDB")
         else:
-            print(
-                "Database em uso: TinyMongo | Nota: Os arquivos da database serão salvos localmente na pasta: local_database"
-            )
+            print("Database em uso: TinyMongo | Nota: Os arquivos da database serão salvos localmente na pasta: local_database")
 
         self.local_database = LocalDatabase()
 
         try:
-            self.commit = (
-                check_output(["git", "rev-parse", "HEAD"]).decode("ascii").strip()
-            )
+            self.commit = check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
             print(f"Commit ver: {self.commit}\n{'-' * 30}")
         except:
             self.commit = None
 
         try:
-            self.remote_git_url = (
-                check_output(["git", "remote", "-v"])
-                .decode("ascii")
-                .strip()
-                .split("\n")[0][7:]
-                .replace(".git", "")
-                .replace(" (fetch)", "")
-            )
+            self.remote_git_url = check_output(['git', 'remote', '-v']).decode(
+                'ascii').strip().split("\n")[0][7:].replace(".git", "").replace(" (fetch)", "")
         except:
             self.remote_git_url = self.config["SOURCE_REPO"]
 
@@ -323,6 +300,7 @@ class BotPool:
         all_tokens = {}
 
         for k, v in dict(os.environ, **self.config).items():
+
             if not isinstance(v, str):
                 continue
 
@@ -332,6 +310,7 @@ class BotPool:
             if len(tokens) > 1:
                 counter = 1
                 for t in tokens:
+
                     if t in all_tokens.values():
                         continue
 
@@ -341,10 +320,7 @@ class BotPool:
             elif (token := tokens.pop()) not in all_tokens.values():
                 all_tokens[k] = token
 
-        if (
-            self.config["INTERACTION_BOTS"]
-            or self.config["INTERACTION_BOTS_CONTROLLER"]
-        ):
+        if self.config["INTERACTION_BOTS"] or self.config["INTERACTION_BOTS_CONTROLLER"]:
             interaction_bot_reg = None
         else:
             try:
@@ -353,6 +329,7 @@ class BotPool:
                 interaction_bot_reg = None
 
         def load_bot(bot_name: str, token: str):
+
             try:
                 token = token.split().pop()
             except:
@@ -363,9 +340,7 @@ class BotPool:
                 return
 
             try:
-                test_guilds = list(
-                    [int(i) for i in self.config[f"TEST_GUILDS_{bot_name}"].split("||")]
-                )
+                test_guilds = list([int(i) for i in self.config[f"TEST_GUILDS_{bot_name}"].split("||")])
             except:
                 test_guilds = None
 
@@ -379,7 +354,7 @@ class BotPool:
                 embed_color=self.config["EMBED_COLOR"],
                 default_prefix=self.config["DEFAULT_PREFIX"],
                 pool=self,
-                number=int(self.max_counter),
+                number=int(self.max_counter)
             )
 
             bot.http.token = token
@@ -389,17 +364,14 @@ class BotPool:
             jsk = bot.get_command("jsk")
             jsk.hidden = True
 
-            if bot.config["INTERACTION_COMMAND_ONLY"]:
+            if bot.config['INTERACTION_COMMAND_ONLY']:
 
                 @bot.check
                 async def check_commands(ctx: CustomContext):
+
                     if not (await bot.is_owner(ctx.author)):
-                        raise GenericError(
-                            "**Os comandos de texto estão desativados!\n"
-                            "Use os comandos de barra /**",
-                            self_delete=True,
-                            delete_original=15,
-                        )
+                        raise GenericError("**Os comandos de texto estão desativados!\n"
+                                           "Use os comandos de barra /**", self_delete=True, delete_original=15)
 
                     return True
 
@@ -407,6 +379,7 @@ class BotPool:
 
                 @bot.listen("on_command")
                 async def message_id_cleanup(ctx: CustomContext):
+
                     id_ = f"{ctx.guild.id}-{ctx.channel.id}-{ctx.message.id}"
 
                     if id_ not in ctx.bot.pool.message_ids:
@@ -419,30 +392,23 @@ class BotPool:
                     except:
                         pass
 
-            @bot.application_command_check(
-                slash_commands=True, message_commands=True, user_commands=True
-            )
+            @bot.application_command_check(slash_commands=True, message_commands=True, user_commands=True)
             async def check(inter: disnake.ApplicationCommandInteraction):
+
                 kwargs = {}
 
                 try:
-                    kwargs["only_voiced"] = inter.application_command.extras[
-                        "only_voiced"
-                    ]
+                    kwargs["only_voiced"] = inter.application_command.extras["only_voiced"]
                 except KeyError:
                     pass
 
                 try:
-                    kwargs["check_player"] = inter.application_command.extras[
-                        "check_player"
-                    ]
+                    kwargs["check_player"] = inter.application_command.extras["check_player"]
                 except KeyError:
                     pass
 
                 try:
-                    kwargs["return_first"] = inter.application_command.extras[
-                        "return_first"
-                    ]
+                    kwargs["return_first"] = inter.application_command.extras["return_first"]
                 except KeyError:
                     pass
 
@@ -455,19 +421,19 @@ class BotPool:
 
             @bot.listen()
             async def on_ready():
+
                 if not bot.bot_ready:
+
                     if bot.initializing:
                         return
 
                     bot.initializing = True
 
                     try:
-                        if (
-                            str(bot.user.id) in bot.config["INTERACTION_BOTS"]
-                            or str(bot.user.id)
-                            in bot.config["INTERACTION_BOTS_CONTROLLER"]
-                            or interaction_bot_reg == bot.identifier
-                        ):
+                        if str(bot.user.id) in bot.config["INTERACTION_BOTS"] or \
+                                str(bot.user.id) in bot.config["INTERACTION_BOTS_CONTROLLER"] or \
+                                interaction_bot_reg == bot.identifier:
+
                             bot.interaction_id = bot.user.id
                             self.controller_bot = bot
 
@@ -479,28 +445,22 @@ class BotPool:
                                 await bot.sync_app_commands(force=True)
 
                         else:
+
                             self._command_sync_flags = commands.CommandSyncFlags.none()
 
-                            if (
-                                self.config["INTERACTION_BOTS"]
-                                and self.config["ADD_REGISTER_COMMAND"]
-                            ):
+                            if self.config["INTERACTION_BOTS"] and self.config["ADD_REGISTER_COMMAND"]:
 
                                 @bot.slash_command(
-                                    name=disnake.Localized(
-                                        "register_commands",
-                                        data={
-                                            disnake.Locale.pt_BR: "registrar_comandos"
-                                        },
-                                    ),
-                                    description="Use este comando caso meus outros comandos de barra (/) não estejam disponíveis...",
+                                    name=disnake.Localized("register_commands",data={disnake.Locale.pt_BR: "registrar_comandos"}),
+                                    description="Use este comando caso meus outros comandos de barra (/) não estejam disponíveis..."
                                 )
                                 async def register_commands(
-                                    inter: disnake.AppCmdInter,
+                                        inter: disnake.AppCmdInter,
                                 ):
                                     interaction_invites = ""
 
                                     for b in self.bots:
+
                                         if not b.interaction_id:
                                             continue
 
@@ -508,18 +468,16 @@ class BotPool:
 
                                     embed = disnake.Embed(
                                         description="**Atenção!** Todos os meus comandos de barra (/) funcionam através da aplicação "
-                                        f"com um dos nomes abaixo:**\n{interaction_invites}\n\n"
-                                        "**Caso os comandos da aplicação acima não sejam exibidos ao digitar barra (/), "
-                                        "clique no nome acima para integrar os comandos de barra no seu "
-                                        "servidor.",
-                                        color=bot.get_color(),
+                                                    f"com um dos nomes abaixo:**\n{interaction_invites}\n\n"
+                                                    "**Caso os comandos da aplicação acima não sejam exibidos ao digitar barra (/), "
+                                                    "clique no nome acima para integrar os comandos de barra no seu "
+                                                    "servidor.",
+                                        color=bot.get_color()
                                     )
 
                                     if not inter.author.guild_permissions.manage_guild:
-                                        embed.description += (
-                                            "\n\n**Nota:** Será necessário ter a permissão de **Gerenciar "
-                                            "Servidor** para integrar os comandos no servidor atual."
-                                        )
+                                        embed.description += "\n\n**Nota:** Será necessário ter a permissão de **Gerenciar " \
+                                                             "Servidor** para integrar os comandos no servidor atual."
 
                                     await inter.send(embed=embed, ephemeral=True)
 
@@ -531,19 +489,11 @@ class BotPool:
                         music_cog = bot.get_cog("Music")
 
                         if music_cog:
-                            bot.loop.create_task(
-                                music_cog.process_nodes(
-                                    data=LAVALINK_SERVERS,
-                                    start_local=self.config["CONNECT_LOCAL_LAVALINK"]
-                                    and start_local,
-                                )
-                            )
+                            bot.loop.create_task(music_cog.process_nodes(data=LAVALINK_SERVERS, start_local=self.config["CONNECT_LOCAL_LAVALINK"] and start_local))
 
                         bot.add_view(PanelView(bot))
 
-                        self.bot_mentions.update(
-                            (f"<@!{bot.user.id}>", f"<@{bot.user.id}>")
-                        )
+                        self.bot_mentions.update((f"<@!{bot.user.id}>", f"<@{bot.user.id}>"))
 
                         bot.sync_command_cooldowns()
 
@@ -557,20 +507,21 @@ class BotPool:
                             await bot.update_appinfo()
                             break
                         except:
-                            print(
-                                f"{bot.user} - Falha ao obter appinfo {retries}/3: {repr(e)}"
-                            )
+                            print(f"{bot.user} - Falha ao obter appinfo {retries}/3: {repr(e)}")
                             retries -= 1
                             await asyncio.sleep(5)
 
                     bot.bot_ready = True
 
-                print(f"{bot.user} - [{bot.user.id}] Online.")
+                print(f'{bot.user} - [{bot.user.id}] Online.')
 
-                if bot.appinfo.bot_public and not self.config.get(
-                    "SILENT_PUBLICBOT_WARNING"
-                ):
-                    print(f"\nO bot {bot.user} (ID: {bot.user.id})")
+                if bot.appinfo.bot_public and not self.config.get("SILENT_PUBLICBOT_WARNING"):
+                    print(f"\nAtenção: O bot {bot.user} (ID: {bot.user.id}) foi configurado no portal do desenvolvedor "
+                          f"como bot público, lembrando que se caso o bot seja divulgado pra ser adicionado publicamente "
+                          f"o mesmo terá que estar sob as condições da licença: "
+                          f"https://github.com/keiperchronos/Hitori-Gotoh/blob/main/LICENSE\n"
+                          f"Caso não queira seguir as condições da licença no seu bot, você pode deixar o bot privado desmarcando a "
+                          f"opção public bot entrando no link: https://discord.com/developers/applications/{bot.user.id}/bot\n")
 
             self.bots.append(bot)
 
@@ -583,19 +534,17 @@ class BotPool:
         message = ""
 
         if not self.bots:
-            os.system("cls" if os.name == "nt" else "clear")
+
+            os.system('cls' if os.name == 'nt' else 'clear')
 
             message = "O token do bot não foi configurado devidamente!\n\n"
 
             if os.environ.get("REPL_SLUG"):
                 message += f"Confira se o token foi adicionado nas secrets da replit"
 
-                print(
-                    message
-                    + ": Guia de como configurar: https://gist.github.com/zRitsu/70737984cbe163f890dae05a80a3ddbe#2---com-o-projeto-j%C3%A1-criado-prossiga-as-etapas-abaixo"
-                )
+                print(message + "Nada ainda...")
 
-                message += f'. <a href="https://gist.github.com/zRitsu/70737984cbe163f890dae05a80a3ddbe#2---com-o-projeto-j%C3%A1-criado-prossiga-as-etapas-abaixo" target="_blank">Clique aqui</a> para ver o guia de como configurar.'
+                message += f'Nada ainda...'
 
             else:
                 message += "Confira se o token foi configurado na ENV/ENVIRONMENT ou no arquivo .env"
@@ -610,7 +559,9 @@ class BotPool:
         self.database.start_task(loop)
 
         if self.config["RUN_RPC_SERVER"]:
+
             if not message:
+
                 for bot in self.bots:
                     loop.create_task(self.start_bot(bot))
 
@@ -626,18 +577,22 @@ class BotPool:
             raise Exception(message)
 
         else:
+
             loop.create_task(self.connect_rpc_ws())
             loop.create_task(self.connect_spotify())
             try:
-                loop.run_until_complete(self.run_bots(self.bots))
+                loop.run_until_complete(
+                    self.run_bots(self.bots)
+                )
             except KeyboardInterrupt:
                 return
 
 
 class BotCore(commands.AutoShardedBot):
+
     def __init__(self, *args, **kwargs):
         self.session: Optional[aiohttp.ClientError] = None
-        self.pool: BotPool = kwargs.pop("pool")
+        self.pool: BotPool = kwargs.pop('pool')
         self.default_prefix = kwargs.pop("default_prefix", "!!")
         self.spotify: Optional[SpotifyClient] = self.pool.spotify
         self.session = aiohttp.ClientSession()
@@ -650,22 +605,19 @@ class BotCore(commands.AutoShardedBot):
         self.player_static_skins = {}
         self.default_skin = self.config.get("DEFAULT_SKIN", "default")
         self.default_static_skin = self.config.get("DEFAULT_STATIC_SKIN", "default")
-        self.default_controllerless_skin = self.config.get(
-            "DEFAULT_CONTROLLERLESS_SKIN", "default"
-        )
+        self.default_controllerless_skin = self.config.get("DEFAULT_CONTROLLERLESS_SKIN", "default")
         self.default_idling_skin = self.config.get("DEFAULT_IDLING_SKIN", "default")
         self.load_skins()
         self.uptime = disnake.utils.utcnow()
         self.env_owner_ids = set()
-        self.dm_cooldown = commands.CooldownMapping.from_cooldown(
-            rate=2, per=30, type=commands.BucketType.member
-        )
+        self.dm_cooldown = commands.CooldownMapping.from_cooldown(rate=2, per=30, type=commands.BucketType.member)
         self.number = kwargs.pop("number", 0)
         super().__init__(*args, **kwargs)
         self.music = music_mode(self)
         self.interaction_id: Optional[int] = None
 
         for i in self.config["OWNER_IDS"].split("||"):
+
             if not i:
                 continue
 
@@ -675,23 +627,18 @@ class BotCore(commands.AutoShardedBot):
                 print(f"Owner_ID inválido: {i}")
 
     def load_skins(self):
+
         for skin in os.listdir("./utils/music/skins/normal_player"):
             if not skin.endswith(".py"):
                 continue
             try:
-                skin_file = import_module(
-                    f"utils.music.skins.normal_player.{skin[:-3]}"
-                )
+                skin_file = import_module(f"utils.music.skins.normal_player.{skin[:-3]}")
                 if not hasattr(skin_file, "load"):
-                    print(
-                        f"Skin ignorada: {skin} | Função load() não configurada/encontrada..."
-                    )
+                    print(f"Skin ignorada: {skin} | Função load() não configurada/encontrada...")
                     continue
                 self.player_skins[skin[:-3]] = skin_file.load()
             except Exception:
-                print(
-                    f"Falha ao carregar skin [normal_player]: {traceback.format_exc()}"
-                )
+                print(f"Falha ao carregar skin [normal_player]: {traceback.format_exc()}")
         if self.default_skin not in self.player_skins:
             self.default_skin = "default"
 
@@ -699,19 +646,13 @@ class BotCore(commands.AutoShardedBot):
             if not skin.endswith(".py"):
                 continue
             try:
-                skin_file = import_module(
-                    f"utils.music.skins.static_player.{skin[:-3]}"
-                )
+                skin_file = import_module(f"utils.music.skins.static_player.{skin[:-3]}")
                 if not hasattr(skin_file, "load"):
-                    print(
-                        f"Skin ignorada: {skin} | Função load() não configurada/encontrada..."
-                    )
+                    print(f"Skin ignorada: {skin} | Função load() não configurada/encontrada...")
                     continue
                 self.player_static_skins[skin[:-3]] = skin_file.load()
             except Exception:
-                print(
-                    f"Falha ao carregar skin [static_player]: {traceback.format_exc()}"
-                )
+                print(f"Falha ao carregar skin [static_player]: {traceback.format_exc()}")
         if self.default_static_skin not in self.player_static_skins:
             self.default_static_skin = "default"
 
@@ -723,28 +664,20 @@ class BotCore(commands.AutoShardedBot):
     def ws_client(self):
         return self.pool.ws_client
 
-    async def get_data(
-        self, id_: int, *, db_name: Union[DBModel.guilds, DBModel.users]
-    ):
+    async def get_data(self, id_: int, *, db_name: Union[DBModel.guilds, DBModel.users]):
         return await self.pool.database.get_data(
             id_=id_, db_name=db_name, collection=str(self.user.id)
         )
 
-    async def update_data(
-        self, id_, data: dict, *, db_name: Union[DBModel.guilds, DBModel.users]
-    ):
+    async def update_data(self, id_, data: dict, *, db_name: Union[DBModel.guilds, DBModel.users]):
         return await self.pool.database.update_data(
             id_=id_, data=data, db_name=db_name, collection=str(self.user.id)
         )
 
-    async def get_global_data(
-        self, id_: int, *, db_name: Union[DBModel.guilds, DBModel.users]
-    ):
+    async def get_global_data(self, id_: int, *, db_name: Union[DBModel.guilds, DBModel.users]):
+
         data = await self.pool.database.get_data(
-            id_=id_,
-            db_name=db_name,
-            collection="global",
-            default_model=global_db_models,
+            id_=id_, db_name=db_name, collection="global", default_model=global_db_models
         )
 
         if db_name == DBModel.users:
@@ -755,9 +688,8 @@ class BotCore(commands.AutoShardedBot):
 
         return data
 
-    async def update_global_data(
-        self, id_, data: dict, *, db_name: Union[DBModel.guilds, DBModel.users]
-    ):
+    async def update_global_data(self, id_, data: dict, *, db_name: Union[DBModel.guilds, DBModel.users]):
+
         if db_name == DBModel.users:
             try:
                 self.pool.rpc_token_cache[int(id_)] = data["token"]
@@ -765,14 +697,11 @@ class BotCore(commands.AutoShardedBot):
                 pass
 
         return await self.pool.database.update_data(
-            id_=id_,
-            data=data,
-            db_name=db_name,
-            collection="global",
-            default_model=global_db_models,
+            id_=id_, data=data, db_name=db_name, collection="global", default_model=global_db_models
         )
 
     def check_skin(self, skin: str):
+
         if skin is None:
             return self.default_skin
 
@@ -785,28 +714,25 @@ class BotCore(commands.AutoShardedBot):
         return skin
 
     def check_static_skin(self, skin: str):
+
         if skin is None or skin not in self.player_static_skins:
             return self.default_static_skin
 
         return skin
 
     async def is_owner(self, user: Union[disnake.User, disnake.Member]) -> bool:
+
         if user.id in self.env_owner_ids:
             return True
 
         return await super().is_owner(user)
 
     async def sync_app_commands(self, force=False):
+
         if not self.command_sync_flags.sync_commands and not force:
             return
 
-        current_cmds = sorted(
-            [
-                sort_dict_recursively(cmd.body.to_dict())
-                for cmd in self.application_commands
-            ],
-            key=lambda k: k["name"],
-        )
+        current_cmds = sorted([sort_dict_recursively(cmd.body.to_dict()) for cmd in self.application_commands], key=lambda k: k["name"])
 
         try:
             with open(f"./local_database/{self.user.id}_app_cmds.json") as f:
@@ -833,44 +759,39 @@ class BotCore(commands.AutoShardedBot):
             traceback.print_exc()
 
     def sync_command_cooldowns(self):
+
         for b in self.pool.bots:
+
             if not b.bot_ready or b == self:
                 continue
 
             for cmd in b.commands:
-                if cmd.extras.get("exclusive_cooldown"):
-                    continue
+                if cmd.extras.get("exclusive_cooldown"): continue
                 self.get_command(cmd.name)._buckets = cmd._buckets
 
             for cmd in b.slash_commands:
                 c = self.get_slash_command(cmd.name)
-                if not c:
-                    continue
-                if c.extras.get("exclusive_cooldown"):
-                    continue
+                if not c: continue
+                if c.extras.get("exclusive_cooldown"): continue
                 c._buckets = cmd._buckets
 
             for cmd in b.user_commands:
                 c = self.get_user_command(cmd.name)
-                if not c:
-                    continue
-                if c.extras.get("exclusive_cooldown"):
-                    continue
+                if not c: continue
+                if c.extras.get("exclusive_cooldown"): continue
                 c._buckets = cmd._buckets
 
             for cmd in b.message_commands:
                 c = self.get_message_command(cmd.name)
-                if not c:
-                    continue
-                if c.extras.get("exclusive_cooldown"):
-                    continue
+                if not c: continue
+                if c.extras.get("exclusive_cooldown"): continue
                 c._buckets = cmd._buckets
 
     async def can_send_message(self, message: disnake.Message):
+
         if not message.channel.permissions_for(message.guild.me).send_messages:
-            print(
-                f"Can't send message in: {message.channel.name} [{message.channel.id}] (Missing permissions)"
-            )
+
+            print(f"Can't send message in: {message.channel.name} [{message.channel.id}] (Missing permissions)")
 
             bucket = self.dm_cooldown.get_bucket(message)
             retry_after = bucket.update_rate_limit()
@@ -879,15 +800,14 @@ class BotCore(commands.AutoShardedBot):
                 return
 
             try:
-                await message.author.send(
-                    f"Não tenho permissão para enviar mensagens no canal {message.channel.mention}..."
-                )
+                await message.author.send(f"Não tenho permissão para enviar mensagens no canal {message.channel.mention}...")
             except disnake.HTTPException:
                 pass
 
         return True
 
     async def on_message(self, message: disnake.Message):
+
         if not self.bot_ready:
             return
 
@@ -907,7 +827,8 @@ class BotCore(commands.AutoShardedBot):
         elif message.author.bot:
             return
 
-        elif message.content in (f"<@{self.user.id}>", f"<@!{self.user.id}>"):
+        elif message.content in (f"<@{self.user.id}>",  f"<@!{self.user.id}>"):
+
             if message.author.bot:
                 return
 
@@ -916,7 +837,7 @@ class BotCore(commands.AutoShardedBot):
 
             embed = disnake.Embed(color=self.get_color(message.guild.me))
 
-            prefix = await self.get_prefix(message)
+            prefix = (await self.get_prefix(message))
 
             if not isinstance(prefix, str):
                 prefix = prefix[-1]
@@ -924,20 +845,17 @@ class BotCore(commands.AutoShardedBot):
             embed.description = f"**Olá {message.author.mention}.**"
 
             if not self.config["INTERACTION_COMMAND_ONLY"]:
-                embed.description += (
-                    f"\n\nMeu prefixo no servidor é: **{prefix}** `(minha menção também funciona como prefixo).`\n"
-                    f"Pra ver todos os meus comandos use **{prefix}help**"
-                )
+                embed.description += f"\n\nMeu prefixo no servidor é: **{prefix}** `(minha menção também funciona como prefixo).`\n"\
+                                    f"Pra ver todos os meus comandos use **{prefix}help**"
 
             bot_count = 0
 
-            if (
-                not self.command_sync_flags.sync_commands
-                and self.config["INTERACTION_BOTS"]
-            ):
+            if not self.command_sync_flags.sync_commands and self.config["INTERACTION_BOTS"]:
+
                 interaction_invites = []
 
                 for b in self.pool.bots:
+
                     if not b.interaction_id:
                         continue
 
@@ -947,19 +865,15 @@ class BotCore(commands.AutoShardedBot):
                     except AttributeError:
                         pass
 
-                    interaction_invites.append(
-                        f"[`{disnake.utils.escape_markdown(str(b.user.name))}`]({disnake.utils.oauth_url(b.user.id, scopes=['applications.commands'])}) "
-                    )
+                    interaction_invites.append(f"[`{disnake.utils.escape_markdown(str(b.user.name))}`]({disnake.utils.oauth_url(b.user.id, scopes=['applications.commands'])}) ")
 
                 if interaction_invites:
-                    embed.description += (
-                        f"\n\nMeus comandos de barra (/) funcionam através "
-                        f"das seguintes aplicações abaixo:\n"
-                        f"{' **|** '.join(interaction_invites)}\n\n"
-                        f"Caso os comandos da aplicação acima não sejam exibidos ao digitar "
-                        f"barra (/), clique no nome acima para integrar os comandos de barra no "
-                        f"seu servidor."
-                    )
+                    embed.description += f"\n\nMeus comandos de barra (/) funcionam através " \
+                                         f"das seguintes aplicações abaixo:\n" \
+                                         f"{' **|** '.join(interaction_invites)}\n\n" \
+                                         f"Caso os comandos da aplicação acima não sejam exibidos ao digitar " \
+                                         f"barra (/), clique no nome acima para integrar os comandos de barra no " \
+                                         f"seu servidor."
 
                 else:
                     embed.description += "\n\n**Pra ver todos os meus comandos use: /**"
@@ -968,19 +882,16 @@ class BotCore(commands.AutoShardedBot):
                 embed.description += "\n\n**Pra ver todos os meus comandos use: /**"
 
             if bot_count:
-                if (
-                    message.author.guild
-                    and message.author.guild_permissions.manage_guild
-                ):
-                    embed.description += (
-                        "\n\n`Caso precise de mais bots de música neste servidor ou queira adicionar bots "
-                        "de música em outro servidor, clique no botão abaixo.`"
-                    )
+
+                if message.author.guild and message.author.guild_permissions.manage_guild:
+                    embed.description += "\n\n`Caso precise de mais bots de música neste servidor ou queira adicionar bots " \
+                                         "de música em outro servidor, clique no botão abaixo.`"
 
                 kwargs = {
                     "components": [
                         disnake.ui.Button(
-                            custom_id="bot_invite", label="Me adicione no seu servidor."
+                            custom_id="bot_invite",
+                            label="Me adicione no seu servidor."
                         )
                     ]
                 }
@@ -990,13 +901,7 @@ class BotCore(commands.AutoShardedBot):
                     "components": [
                         disnake.ui.Button(
                             label="Me adicione no seu servidor.",
-                            url=disnake.utils.oauth_url(
-                                self.user.id,
-                                permissions=disnake.Permissions(
-                                    self.config["INVITE_PERMISSIONS"]
-                                ),
-                                scopes=("bot", "applications.commands"),
-                            ),
+                            url=disnake.utils.oauth_url(self.user.id, permissions=disnake.Permissions(self.config['INVITE_PERMISSIONS']), scopes=('bot', 'applications.commands'))
                         )
                     ]
                 }
@@ -1032,46 +937,41 @@ class BotCore(commands.AutoShardedBot):
         await self.invoke(ctx)
 
     def check_bot_forum_post(
-        self,
-        channel: Union[
-            disnake.ForumChannel,
-            disnake.TextChannel,
-            disnake.VoiceChannel,
-            disnake.Thread,
-        ],
-        raise_error=False,
+            self,
+            channel: Union[disnake.ForumChannel, disnake.TextChannel, disnake.VoiceChannel, disnake.Thread],
+            raise_error=False,
     ):
+
         try:
             if isinstance(channel.parent, disnake.ForumChannel):
-                if channel.owner_id in (
-                    bot.user.id for bot in self.pool.bots if bot.bot_ready
-                ):
+
+                if channel.owner_id in (bot.user.id for bot in self.pool.bots if bot.bot_ready):
+
                     if raise_error is False:
                         return False
 
-                    raise GenericError(
-                        "**Você não pode usar comandos prefixed na postagem atual...**\n"
-                        "`Use comando de barra (/) aqui.`",
-                        self_delete=True,
-                    )
+                    raise GenericError("**Você não pode usar comandos prefixed na postagem atual...**\n"
+                                       "`Use comando de barra (/) aqui.`", self_delete=True)
         except AttributeError:
             pass
 
         return True
 
     def get_color(self, me: Optional[disnake.Member] = None):
+
         if not me:
-            return self.color or 0x2B2D31
+            return self.color or 0x2b2d31
 
         if self.color:
             return self.color
 
         if me.color.value == 0:
-            return 0x2B2D31
+            return 0x2b2d31
 
         return me.color
 
     async def update_appinfo(self):
+
         await self.wait_until_ready()
 
         self.appinfo = await self.application_info()
@@ -1081,59 +981,49 @@ class BotCore(commands.AutoShardedBot):
         except AttributeError:
             self.owner = self.appinfo.owner
 
-    async def on_application_command_autocomplete(
-        self, inter: disnake.ApplicationCommandInteraction
-    ):
+    async def on_application_command_autocomplete(self, inter: disnake.ApplicationCommandInteraction):
+
         if not self.bot_ready or not inter.guild_id:
             return
 
         await super().on_application_command_autocomplete(inter)
 
-    async def on_application_command(
-        self, inter: disnake.ApplicationCommandInteraction
-    ):
+    async def on_application_command(self, inter: disnake.ApplicationCommandInteraction):
+
         if not inter.guild_id:
-            await inter.send(
-                "Meus comandos não podem ser usados no DM.\n"
-                "Use em algum servidor que estou presente."
-            )
+            await inter.send("Meus comandos não podem ser usados no DM.\n"
+                             "Use em algum servidor que estou presente.")
             return
 
         if not self.bot_ready:
-            await inter.send(
-                "Ainda estou inicializando...\nPor favor aguarde mais um pouco...",
-                ephemeral=True,
-            )
+            await inter.send("Ainda estou inicializando...\nPor favor aguarde mais um pouco...", ephemeral=True)
             return
 
         if self.config["COMMAND_LOG"] and inter.guild:
             try:
-                print(
-                    f"cmd log: [user: {inter.author} - {inter.author.id}] - [guild: {inter.guild.name} - {inter.guild.id}]"
-                    f" - [cmd: {inter.data.name}] {datetime.datetime.utcnow().strftime('%d/%m/%Y - %H:%M:%S')} (UTC) - {inter.filled_options}\n"
-                    + ("-" * 15)
-                )
+                print(f"cmd log: [user: {inter.author} - {inter.author.id}] - [guild: {inter.guild.name} - {inter.guild.id}]"
+                      f" - [cmd: {inter.data.name}] {datetime.datetime.utcnow().strftime('%d/%m/%Y - %H:%M:%S')} (UTC) - {inter.filled_options}\n" + ("-" * 15))
             except:
                 traceback.print_exc()
 
         await super().on_application_command(inter)
 
     def load_modules(self):
+
         modules_dir = "modules"
 
-        load_status = {"reloaded": [], "loaded": []}
+        load_status = {
+            "reloaded": [],
+            "loaded": []
+        }
 
         bot_name = self.user or self.identifier
 
         for item in os.walk(modules_dir):
-            files = filter(lambda f: f.endswith(".py"), item[-1])
+            files = filter(lambda f: f.endswith('.py'), item[-1])
             for file in files:
                 filename, _ = os.path.splitext(file)
-                module_filename = (
-                    os.path.join(modules_dir, filename)
-                    .replace("\\", ".")
-                    .replace("/", ".")
-                )
+                module_filename = os.path.join(modules_dir, filename).replace('\\', '.').replace('/', '.')
                 try:
                     self.reload_extension(module_filename)
                     print(f"{'=' * 48}\n[OK] {bot_name} - {filename}.py Recarregado.")
@@ -1144,14 +1034,10 @@ class BotCore(commands.AutoShardedBot):
                         print(f"{'=' * 48}\n[OK] {bot_name} - {filename}.py Carregado.")
                         load_status["loaded"].append(f"{filename}.py")
                     except Exception as e:
-                        print(
-                            f"{'=' * 48}\n[ERRO] {bot_name} - Falha ao carregar/recarregar o módulo: {filename}"
-                        )
+                        print(f"{'=' * 48}\n[ERRO] {bot_name} - Falha ao carregar/recarregar o módulo: {filename}")
                         raise e
                 except Exception as e:
-                    print(
-                        f"{'=' * 48}\n[ERRO] {bot_name} - Falha ao carregar/recarregar o módulo: {filename}"
-                    )
+                    print(f"{'=' * 48}\n[ERRO] {bot_name} - Falha ao carregar/recarregar o módulo: {filename}")
                     raise e
 
         print(f"{'=' * 48}")
@@ -1160,10 +1046,8 @@ class BotCore(commands.AutoShardedBot):
             self.remove_slash_command("play_music_file")
 
         for c in self.slash_commands:
-            if (desc := len(c.description)) > 100:
-                raise Exception(
-                    f"A descrição do comando {c.name} excedeu a quantidade de caracteres permitido "
-                    f"no discord (100), quantidade atual: {desc}"
-                )
+            if (desc:=len(c.description)) > 100:
+                raise Exception(f"A descrição do comando {c.name} excedeu a quantidade de caracteres permitido "
+                                f"no discord (100), quantidade atual: {desc}")
 
         return load_status

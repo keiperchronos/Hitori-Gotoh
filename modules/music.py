@@ -4175,10 +4175,6 @@ class Music(commands.Cog):
 
             if control == PlayerControls.fav_manageer:
 
-                if not player.current:
-                    await interaction.send("**Não há música tocando atualmente....**", ephemeral= True)
-                    return
-
                 if str(interaction.user.id) not in interaction.message.content:
                     await interaction.send("Você não pode interagir aqui!", ephemeral=True)
                     return
@@ -4303,6 +4299,10 @@ class Music(commands.Cog):
                         "**Você tem uma interação em aberto!**\n`Se for uma mensagem oculta, evite clicar em \"ignorar\".`")
 
                 if control == PlayerControls.add_favorite:
+
+                    if not player.current:
+                        await interaction.send("**Não há música tocando atualmente...**", ephemeral=True)
+                        return
 
                     choices = {}
                     msg = ""
@@ -5456,7 +5456,8 @@ class Music(commands.Cog):
             while not self.bot.is_closed():
                 if retries >= max_retries:
                     print(
-                        f"{self.bot.user} - Todas as tentativas de conectar ao servidor [{data['identifier']}] falharam.\n")
+                        f"{self.bot.user} - Todas as tentativas de conectar ao servidor [{data['identifier']}] falharam.\n"
+                        f"Causa: {repr(exception)}")
                     return
                 else:
                     await asyncio.sleep(backoff)
