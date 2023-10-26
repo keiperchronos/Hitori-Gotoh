@@ -117,6 +117,7 @@ DEFAULT_CONFIG = {
     ### Tests ####
     ##############
     "USE_YTDL": False,
+    "SILENT_PUBLICBOT_WARNING": False
 }
 
 
@@ -208,6 +209,7 @@ def load_config():
         "PRESENCES_INTENT",
         "MESSAGE_CONTENT_INTENT",
         "USE_YTDL",
+        "SILENT_PUBLICBOT_WARNING",
     ]:
         if CONFIG[i] in (True, False, None):
             continue
