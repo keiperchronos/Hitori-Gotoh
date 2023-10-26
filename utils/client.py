@@ -72,6 +72,9 @@ class BotPool:
                 async with timeout(900):
                     bot: BotCore = await self.fill_owner_queue.get()
             except asyncio.TimeoutError:
+
+                if bot.appinfo:
+                    return
                 return
 
             try:
@@ -79,6 +82,7 @@ class BotPool:
             except:
                 print(f"{bot.user} -  Falha ao obter dados de owners via api do discord:\n{traceback.format_exc()}")
 
+                await asyncio.sleep(2)
 
     @property
     def database(self) -> Union[LocalDatabase, MongoDatabase]:
