@@ -16,6 +16,7 @@ from typing import Optional, Union, List
 import aiohttp
 import disnake
 import requests
+from async_timeout import timeout
 from asyncspotify import Client as SpotifyClient
 from disnake.ext import commands
 from dotenv import dotenv_values
@@ -58,9 +59,26 @@ class BotPool:
         self.failed_bots: dict = {}
         self.controller_bot: Optional[BotCore] = None
         self.current_useragent = self.reset_useragent()
+        self.fill_owner_queue = asyncio.Queue()
 
     def reset_useragent(self):
         self.current_useragent = generate_user_agent()
+
+    async def fill_owner_task(self):
+
+        while True:
+
+            try:
+                async with timeout(900):
+                    bot: BotCore = await self.fill_owner_queue.get()
+            except asyncio.TimeoutError:
+                return
+
+            try:
+                await bot.update_appinfo()
+            except:
+                print(f"{bot.user} -  Falha ao obter dados de owners via api do discord:\n{traceback.format_exc()}")
+
 
     @property
     def database(self) -> Union[LocalDatabase, MongoDatabase]:
@@ -134,7 +152,7 @@ class BotPool:
                     "https://discord.com/developers/applications/<br>" \
                     "e clique na sua aplicação e depois clique no menu \"bot\"<br>" \
                     "e em seguida ative todas as intents.<br>" \
-                    "Print de exemplo: https://imgur.com/gallery/OrVY3KY<br>" \
+                    "Print de exemplo: https://i.imgur.com/a9c1DHT.png<br>" \
                     "Após corrigir, reinicie a aplicação."
 
                 print(("=" * 30) + f"\nFalha ao iniciar o bot configurado no: {bot.identifier}\n" + e.replace('<br>', '\n') + "\n" + ("=" * 30))
@@ -143,7 +161,7 @@ class BotPool:
                 e = "Foi utilizado um token inválido.<br>" \
                     "Revise se o token informado está correto<br>" \
                     "ou se o token foi resetado<br>" \
-                    "ou copiado do local correto ( ex: https://imgur.com/gallery/JCoxoOU )<br>" \
+                    "ou copiado do local correto ( ex: https://i.imgur.com/k894c1q.png )<br>" \
                     "Após corrigir, reinicie a aplicação."
 
                 print(("=" * 30) + f"\nFalha ao iniciar o bot configurado no: {bot.identifier}\n" + e.replace('<br>', '\n') + "\n" + ( "=" * 30))
@@ -241,7 +259,6 @@ class BotPool:
         start_local = None
 
         if os.environ.get("HOSTNAME", "").lower() == "squarecloud.app" and self.config.get("SQUARECLOUD_LAVALINK_AUTO_CONFIG", "").lower() != "false":
-            print("Usando a configuração automática do lavalink na squarecloud")
             for f in ("squarecloud.config", "squarecloud.app"):
                 try:
                     square_cfg = dotenv_values(f"./{f}")
@@ -250,10 +267,13 @@ class BotPool:
                 else:
                     try:
                         start_local = int(square_cfg["MEMORY"]) >= 490
-                        self.config["AUTO_DOWNLOAD_LAVALINK_SERVERLIST"] = not start_local
-                        self.config['USE_YTDL'] = int(square_cfg["MEMORY"]) >= 512
                     except KeyError:
                         pass
+                    else:
+                        self.config["AUTO_DOWNLOAD_LAVALINK_SERVERLIST"] = not start_local
+                        self.config['USE_YTDL'] = int(square_cfg["MEMORY"]) >= 512
+                        print("Usando a configuração automática do lavalink na squarecloud\n"
+                              f"Lavalink local: {start_local} | YTDL: {self.config['USE_YTDL']} | Memória: {square_cfg['MEMORY']}")
                     break
 
         if start_local is None:
@@ -500,29 +520,11 @@ class BotPool:
                     except Exception:
                         traceback.print_exc()
 
-                    retries = 3
-
-                    while retries:
-                        try:
-                            await bot.update_appinfo()
-                            break
-                        except:
-                            print(f"{bot.user} - Falha ao obter appinfo {retries}/3: {repr(e)}")
-                            retries -= 1
-                            await asyncio.sleep(5)
+                    await self.fill_owner_queue.put(bot)
 
                     bot.bot_ready = True
 
                 print(f'{bot.user} - [{bot.user.id}] Online.')
-
-                if bot.appinfo.bot_public and not self.config.get("SILENT_PUBLICBOT_WARNING"):
-                  print(f"\nAtenção: O bot [{bot.user}] (ID: {bot.user.id}) foi configurado no portal do desenvolvedor "
-                          "como bot público\n"
-                          "lembrando que se caso o bot seja divulgado pra ser adicionado publicamente o mesmo terá que "
-                          "estar sob as condições da licença GPL-2: "
-                          "https://github.com/keiperchronos/Hitori-Gotoh/blob/main/LICENSE\n"
-                          "Caso não queira seguir as condições da licença no seu bot, você pode deixar o bot privado desmarcando a "
-                          f"opção public bot acessando o link: https://discord.com/developers/applications/{bot.user.id}/bot\n")
 
             self.bots.append(bot)
 
@@ -558,6 +560,8 @@ class BotPool:
         loop = asyncio.get_event_loop()
 
         self.database.start_task(loop)
+
+        loop.create_task(self.fill_owner_task())
 
         if self.config["RUN_RPC_SERVER"]:
 
@@ -982,6 +986,15 @@ class BotCore(commands.AutoShardedBot):
         except AttributeError:
             self.owner = self.appinfo.owner
 
+        if self.appinfo.bot_public and not self.config.get("SILENT_PUBLICBOT_WARNING"):
+            print(f"\nAtenção: O bot [{self.user}] (ID: {self.user.id}) foi configurado no portal do desenvolvedor "
+                  "como bot público\n"
+                  "lembrando que se caso o bot seja divulgado pra ser adicionado publicamente o mesmo terá que "
+                  "estar sob as condições da licença GPL-2: "
+                  "https://github.com/keiperchronos/Hitori-Gotoh/blob/main/LICENSE\n"
+                  "Caso não queira seguir as condições da licença no seu bot, você pode deixar o bot privado desmarcando a "
+                  f"opção public bot acessando o link: https://discord.com/developers/applications/{self.user.id}/bot\n")
+
     async def on_application_command_autocomplete(self, inter: disnake.ApplicationCommandInteraction):
 
         if not self.bot_ready or not inter.guild_id:
@@ -1041,9 +1054,9 @@ class BotCore(commands.AutoShardedBot):
                             print(f"{'=' * 48}\n[ERRO] {bot_name} - Falha ao carregar/recarregar o módulo: {filename}")
                             raise e
                         return
-                    except Exception as e:
-                        if self.pool.controller_bot == self and not self.bot_ready:
-                            print(f"{'=' * 48}\n[ERRO] {bot_name} - Falha ao carregar/recarregar o módulo: {filename}")
+                except Exception as e:
+                    if self.pool.controller_bot == self and not self.bot_ready:
+                        print(f"{'=' * 48}\n[ERRO] {bot_name} - Falha ao carregar/recarregar o módulo: {filename}")
                         raise e
                     return
 
