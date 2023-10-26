@@ -138,7 +138,7 @@ def run_lavalink(
 
     for filename, url in (
         ("Lavalink.jar", lavalink_file_url),
-        ("application.yml", "https://github.com/keiperchronos/bin-rios/releases/download/lavalink/application.yml")
+        ("application.yml", "https://github.com/zRitsu/LL-binaries/releases/download/0.0.1/application.yml")
     ):
         if download_file(url, filename):
             clear_plugins = True

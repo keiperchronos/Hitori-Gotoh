@@ -518,8 +518,8 @@ class BotPool:
                 if bot.appinfo.bot_public and not self.config.get("SILENT_PUBLICBOT_WARNING"):
                     print(f"\nAtenção: O bot {bot.user} (ID: {bot.user.id}) foi configurado no portal do desenvolvedor "
                           f"como bot público, lembrando que se caso o bot seja divulgado pra ser adicionado publicamente "
-                          f"o mesmo terá que estar sob as condições da licença: "
-                          f"https://github.com/keiperchronos/Hitori-Gotoh/blob/main/LICENSE\n"
+                          f"o mesmo terá que estar sob as condições da licença GPL-2: "
+                          f"https://github.com/zRitsu/MuseHeart-MusicBot/blob/main/LICENSE\n"
                           f"Caso não queira seguir as condições da licença no seu bot, você pode deixar o bot privado desmarcando a "
                           f"opção public bot entrando no link: https://discord.com/developers/applications/{bot.user.id}/bot\n")
 
@@ -542,9 +542,9 @@ class BotPool:
             if os.environ.get("REPL_SLUG"):
                 message += f"Confira se o token foi adicionado nas secrets da replit"
 
-                print(message + "Nada ainda...")
+                print(message + ": Guia de como configurar: https://gist.github.com/zRitsu/70737984cbe163f890dae05a80a3ddbe#2---com-o-projeto-j%C3%A1-criado-prossiga-as-etapas-abaixo")
 
-                message += f'Nada ainda...'
+                message += f'. <a href="https://gist.github.com/zRitsu/70737984cbe163f890dae05a80a3ddbe#2---com-o-projeto-j%C3%A1-criado-prossiga-as-etapas-abaixo" target="_blank">Clique aqui</a> para ver o guia de como configurar.'
 
             else:
                 message += "Confira se o token foi configurado na ENV/ENVIRONMENT ou no arquivo .env"
