@@ -74,7 +74,7 @@ class BotPool:
             except asyncio.TimeoutError:
 
                 if bot.appinfo:
-                    return
+                    continue
                 return
 
             try:
