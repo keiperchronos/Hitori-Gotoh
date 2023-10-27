@@ -5127,6 +5127,8 @@ class Music(commands.Cog):
                 except:
                     pass
 
+                player.current = player.last_track
+
                 player._new_node_task = self.bot.loop.create_task(player._wait_for_new_node())
 
         await asyncio.sleep(backoff)
