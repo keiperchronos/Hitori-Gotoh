@@ -993,14 +993,15 @@ class BotCore(commands.AutoShardedBot):
             owners = [self.appinfo.owner]
 
             if self.appinfo.bot_public and not self.config.get("SILENT_PUBLICBOT_WARNING"):
+
+                def check_member(u: disnake.User, g: disnake.Guild):
+                    member = g.get_member(u.id)
+                    return member and member.guild_permissions.manage_guild
                 
                 guilds = set()
-                for bot_owner in owners:
-                    for guild in self.guilds:
-                        member = guild.get_member(bot_owner.id)
-                        if member and member.guild_permissions.manage_guild:
-                            continue
-                        guilds.add(guild)
+                for guild in self.guilds:
+                        if not [dev for dev in owners if check_member(dev, guild)]:
+                            guilds.add(guild)
 
             warn_msg = f"Atenção: O bot [{self.user}] (ID: {self.user.id}) foi configurado no portal do desenvolvedor " \
             "como bot público\n" \
