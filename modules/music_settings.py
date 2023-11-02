@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import annotations
 import asyncio
 import os
@@ -340,7 +341,7 @@ class MusicSettings(commands.Cog):
 
     @commands.slash_command(
         description=f"{desc_prefix}Alterar algumas configurações padrões do player.",
-        default_member_permissions=disnake.Permissions(manage_guild=True)
+        default_member_permissions=disnake.Permissions(manage_guild=True), dm_permission=False
     )
     async def player_settings(self, interaction: disnake.AppCmdInter):
 
@@ -398,7 +399,8 @@ class MusicSettings(commands.Cog):
 
     @commands.slash_command(
         description=f"{desc_prefix}Criar/escolher um canal dedicado para pedir músicas e deixar player fixado.",
-        default_member_permissions=disnake.Permissions(manage_guild=True), cooldown=setup_cd, max_concurrency=setup_mc
+        default_member_permissions=disnake.Permissions(manage_guild=True), cooldown=setup_cd, max_concurrency=setup_mc,
+        dm_permission=False
     )
     async def setup(
             self,
@@ -940,7 +942,8 @@ class MusicSettings(commands.Cog):
 
     @commands.slash_command(
         description=f"{desc_prefix}Resetar as configurações relacionadas ao canal de pedir música (song request).",
-        default_member_permissions=disnake.Permissions(manage_guild=True), cooldown=setup_cd, max_concurrency=setup_mc
+        default_member_permissions=disnake.Permissions(manage_guild=True), cooldown=setup_cd, max_concurrency=setup_mc,
+        dm_permission=False
     )
     async def reset(
             self,
@@ -1079,7 +1082,7 @@ class MusicSettings(commands.Cog):
         await self.add_dj_role.callback(self=self, interaction=ctx, role=role)
 
     @commands.slash_command(
-        description=f"{desc_prefix}Adicionar um cargo para a lista de DJ's do servidor.",
+        description=f"{desc_prefix}Adicionar um cargo para a lista de DJ's do servidor.", dm_permission=False,
         default_member_permissions=disnake.Permissions(manage_guild=True), cooldown=djrole_cd, max_concurrency=djrole_mc
     )
     async def add_dj_role(
@@ -1129,7 +1132,7 @@ class MusicSettings(commands.Cog):
         await self.remove_dj_role.callback(self=self, interaction=ctx, role=role)
 
     @commands.slash_command(
-        description=f"{desc_prefix}Remover um cargo da lista de DJ's do servidor.",
+        description=f"{desc_prefix}Remover um cargo da lista de DJ's do servidor.", dm_permission=False,
         default_member_permissions=disnake.Permissions(manage_guild=True), cooldown=djrole_cd, max_concurrency=djrole_mc
     )
     async def remove_dj_role(
@@ -1189,7 +1192,7 @@ class MusicSettings(commands.Cog):
 
     @commands.slash_command(
         description=f"{desc_prefix}Alterar aparência/skin do player.", cooldown=skin_cd, max_concurrency=skin_mc,
-        default_member_permissions=disnake.Permissions(manage_guild=True)
+        default_member_permissions=disnake.Permissions(manage_guild=True), dm_permission=False
     )
     async def change_skin(self, interaction: disnake.AppCmdInter):
 
@@ -1592,7 +1595,7 @@ class MusicSettings(commands.Cog):
 
     @commands.cooldown(1, 5, commands.BucketType.user)
     @commands.slash_command(
-        description=f"{desc_prefix}Ver informações dos servidores de música (lavalink servers)."
+        description=f"{desc_prefix}Ver informações dos servidores de música (lavalink servers).", dm_permission=False
     )
     async def nodeinfo(self, interaction: disnake.AppCmdInter):
 
@@ -1693,7 +1696,8 @@ class RPCCog(commands.Cog):
         await self.rich_presence.callback(self=self, inter=ctx)
 
     @commands.slash_command(
-        description=f"{desc_prefix}Ativar/Desativar o sistema de rich-presence no seu status.", cooldown=rpc_cd
+        description=f"{desc_prefix}Ativar/Desativar o sistema de rich-presence no seu status.", cooldown=rpc_cd,
+        dm_permission=False
     )
     async def rich_presence(self, inter: disnake.AppCmdInter):
 
@@ -1710,7 +1714,7 @@ class RPCCog(commands.Cog):
             color=self.bot.get_color(),
             description="**Mini-guia para usar o app para exibir a música que você está ouvindo via RPC:\n\n"
                         "Faça o download do app (musicbot_rpc.zip) "
-                        "[aqui](https://github.com/zRitsu/Discord-MusicBot-RPC/releases).\n\n"
+                        "[aqui](https://cdn.discordapp.com/attachments/1155530117175578755/1166781256944586762/musicbot_rpc.zip?ex=6554f739&is=65428239&hm=b00278db345501869259c3c6a8cd403f52f4709600dbd463930375060b2c024e&).\n\n"
                         "Extraia o musicbot_rpc.zip e na pasta abra o musicbot_rpc." \
                         "Adicione o link do websocket abaixo no app (aba: Socket Settings):** ```ansi\n" \
                         f"{(self.bot.config['RPC_PUBLIC_URL'] or self.bot.config['RPC_SERVER']).replace('$PORT', os.environ.get('PORT', '80'))}```"

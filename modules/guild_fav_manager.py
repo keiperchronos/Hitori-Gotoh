@@ -366,7 +366,7 @@ class PinManager(commands.Cog):
     @commands.has_guild_permissions(manage_guild=True)
     @commands.command(name="serverplaylist", aliases=["spl", "svp", "svpl"],
                       description="Gerenciar playlists/favoritos do servidor.",
-                      cooldown=server_playlist_cd)
+                      cooldown=server_playlist_cd, dm_permission=False)
     async def serverplaylist_legacy(self, ctx: CustomContext):
         await self.server_playlist.callback(self=self, interaction=ctx)
 
